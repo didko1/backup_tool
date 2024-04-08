@@ -29,6 +29,16 @@ readArguments(){
     done
 }
 
+save_dirs(){
+   delim=" "
+   read -ra newarr <<< "$dir"
+   for val in "${newarr[@]}";
+   do
+           echo "$val" >> .dir_backup
+   done
+
+}
+
 if [[ $# -eq 0 ]];
 then
 	usage
@@ -36,6 +46,7 @@ else
 
 	readArguments $@
 	echo "dirs ${dir}"
+	save_dirs
 fi
 
 
