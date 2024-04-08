@@ -3,6 +3,7 @@
 export filename
 export dir
 export dry_run=false
+export backup_file=.dir_backup
 
 usage(){
    echo "Usage: ./backup.sh dir1 dir2 ....Provide at least one directory!"
@@ -29,12 +30,16 @@ readArguments(){
     done
 }
 
+clean_backup_file(){
+    echo "directories backed up" > $backup_file
+}
+
 save_dirs(){
    delim=" "
    read -ra newarr <<< "$dir"
    for val in "${newarr[@]}";
    do
-           echo "$val" >> .dir_backup
+           echo "$val" >> $backup_file
    done
 
 }
@@ -55,6 +60,7 @@ then
 else
 	readArguments $@
 	echo "dirs ${dir}"
+	clean_backup_file
 	save_dirs
 	archive_dirs
 fi
