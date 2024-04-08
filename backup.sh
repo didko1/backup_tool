@@ -53,6 +53,13 @@ archive_dirs(){
     done
 }
 
+dryrun(){
+    echo "Following files will be included to archive:"
+    for path in $dir;
+    do
+	    ls $path
+    done
+}
 
 if [[ $# -eq 0 ]];
 then
@@ -60,9 +67,14 @@ then
 else
 	readArguments $@
 	echo "dirs ${dir}"
-	clean_backup_file
-	save_dirs
-	archive_dirs
+	if $dry_run;
+	then
+		dryrun
+	else
+		clean_backup_file
+		save_dirs
+		archive_dirs
+	fi
 fi
 
 
