@@ -39,14 +39,24 @@ save_dirs(){
 
 }
 
+archive_dirs(){
+    tar_name="archive_$(date +%Y%m%d).tar.xz"
+    echo $tar_name
+    for path in $dir;
+    do
+	    ls $path | while read L; do tar -rvf $tar_name $dir/$L ;done
+    done
+}
+
+
 if [[ $# -eq 0 ]];
 then
 	usage
 else
-
 	readArguments $@
 	echo "dirs ${dir}"
 	save_dirs
+	archive_dirs
 fi
 
 
