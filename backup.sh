@@ -1,11 +1,12 @@
 #/bin/bash
 
 export filename
-export dir
+export dir=""
 export dry_run=false
 export backup_file=.dir_backup
 export tar=""
 export append=false
+export recover_backup=false
 
 usage(){
    echo "Usage: ./backup.sh dir1 dir2 ....Provide at least one directory!"
@@ -32,6 +33,11 @@ readArguments(){
 			dir+="$1"
 			dir+=" "
 			shift
+			;;
+
+		--recover)
+			shift
+			recover_backup=true
 			;;
 
 		*)
@@ -80,6 +86,22 @@ dryrun(){
     done
 }
 
+recover(){
+	echo "recovering backups"
+
+	if ! [[ -e $backup_file ]];
+	then
+		echo "!!! nothing to recover !!!"
+		exit 1
+	fi
+
+	cat $backup_file | while read D;
+        do
+		echo "archiving directory $D"
+	        tar -rvf backup_recovered.tar.xz $D
+	done
+}
+
 if [[ $# -eq 0 ]];
 then
 	usage
@@ -89,6 +111,9 @@ else
 	if $dry_run;
 	then
 		dryrun
+	elif $recover_backup;
+	then
+		recover
 	else
 		if ! $append;
 		then
