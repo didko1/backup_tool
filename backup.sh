@@ -4,6 +4,8 @@ export filename
 export dir
 export dry_run=false
 export backup_file=.dir_backup
+export tar=""
+export append=false
 
 usage(){
    echo "Usage: ./backup.sh dir1 dir2 ....Provide at least one directory!"
@@ -21,8 +23,19 @@ readArguments(){
 			echo "dry_run $dry_run"
 			shift
 			;;
-		*)
+		-a)
+			shift
+			append=true
+			echo "append is $append"
+			tar="$1"
+			shift
 			dir+="$1"
+			dir+=" "
+			shift
+			;;
+
+		*)
+		        dir+="$1"
 			dir+=" "
 			shift
 			;;
@@ -45,7 +58,13 @@ save_dirs(){
 }
 
 archive_dirs(){
-    tar_name="archive_$(date +%Y%m%d).tar.xz"
+    if $append;
+    then
+	    tar_name=$tar
+	    echo "tar is $tar_name"
+    else
+	    tar_name="archive_$(date +%Y%m%d%H%M).tar.xz"
+    fi
     echo $tar_name
     for path in $dir;
     do
@@ -71,7 +90,10 @@ else
 	then
 		dryrun
 	else
-		clean_backup_file
+		if ! $append;
+		then
+			clean_backup_file
+		fi
 		save_dirs
 		archive_dirs
 	fi
