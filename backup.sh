@@ -9,25 +9,29 @@ export append=false
 export recover_backup=false
 
 usage(){
-   echo "Usage: ./backup.sh dir1 dir2 ....Provide at least one directory!"
+    echo "Usage: ./backup.sh dir1 dir2 ....Provide at least one directory!"
 }
 
 show_help_message(){
-   echo  "Use  "
+    usage
+    echo  "Options"
+    echo "-a append file/dir to archive"
+    echo "--recovery recover previous archive"
+    echo "--dry-run list files that will be archived"
+    echo "-h show this message"
 }
 
 readArguments(){
-    while [[ $# -gt 0 ]];do
+    while [[ $# -gt 0 ]];
+    do
 	case $1 in
 		-n|--dry-run)
 			dry_run=true
-			echo "dry_run $dry_run"
 			shift
 			;;
 		-a)
 			shift
 			append=true
-			echo "append is $append"
 			tar="$1"
 			shift
 			dir+="$1"
@@ -38,6 +42,10 @@ readArguments(){
 		--recover)
 			shift
 			recover_backup=true
+			;;
+		-h)
+			show_help_message
+			shift
 			;;
 
 		*)
@@ -54,12 +62,12 @@ clean_backup_file(){
 }
 
 save_dirs(){
-   delim=" "
-   read -ra newarr <<< "$dir"
-   for val in "${newarr[@]}";
-   do
-           echo "$val" >> $backup_file
-   done
+    delim=" "
+    read -ra newarr <<< "$dir"
+    for val in "${newarr[@]}";
+    do
+            echo "$val" >> $backup_file
+    done
 
 }
 
@@ -71,7 +79,6 @@ archive_dirs(){
     else
 	    tar_name="archive_$(date +%Y%m%d%H%M).tar.xz"
     fi
-    echo $tar_name
     for path in $dir;
     do
 	    ls $path | while read L; do tar -rvf $tar_name $dir/$L ;done
@@ -87,27 +94,25 @@ dryrun(){
 }
 
 recover(){
-	echo "recovering backups"
-
-	if ! [[ -e $backup_file ]];
-	then
-		echo "!!! nothing to recover !!!"
-		exit 1
-	fi
-
-	cat $backup_file | while read D;
-        do
-		echo "archiving directory $D"
-	        tar -rvf backup_recovered.tar.xz $D
-	done
+    echo "recovering backups"
+    if ! [[ -e $backup_file ]];
+    then
+	echo "!!! nothing to recover !!!"
+	exit 1
+    fi
+    cat $backup_file | while read D;
+    do
+	echo "archiving directory $D"
+        tar -rvf backup_recovered.tar.xz $D
+    done
 }
 
+############# main ###########
 if [[ $# -eq 0 ]];
 then
 	usage
 else
 	readArguments $@
-	echo "dirs ${dir}"
 	if $dry_run;
 	then
 		dryrun
