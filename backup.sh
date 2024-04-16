@@ -14,11 +14,13 @@ usage(){
 
 show_help_message(){
     usage
-    echo  "Options"
-    echo "-a append file/dir to archive"
-    echo "--recovery recover previous archive"
-    echo "--dry-run list files that will be archived"
-    echo "-h show this message"
+    bold=$(tput bold)
+    normal=$(tput sgr0)
+    echo  "${bold}Options:${normal}"
+    echo "${bold}-a ${normal}append file/dir to archive"
+    echo "${bold}--recovery${normal} recover previous archive"
+    echo "${bold}--dry-run${normal} list files that will be archived"
+    echo "${bold}-h${normal} show this message"
 }
 
 readArguments(){
