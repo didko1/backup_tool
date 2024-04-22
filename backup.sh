@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 export filename
 export dir=""
@@ -6,10 +6,12 @@ export dry_run=false
 export backup_file=.dir_backup
 export tar=""
 export append=false
+export add=false
+export remove=false
 export recover_backup=false
 
 usage(){
-    echo "Usage: ./backup.sh dir1 dir2 ....Provide at least one directory!"
+    echo "No new directories provided. Backing up all dirs from .dir_backup"
 }
 
 show_help_message(){
@@ -31,9 +33,18 @@ readArguments(){
 			dry_run=true
 			shift
 			;;
+		--add)
+			shift
+			add=true
+			dir+="$1"
+                        dir+=" "
+                        shift
+                        ;;
+
 		-a)
 			shift
 			append=true
+			echo "append is $append"
 			tar="$1"
 			shift
 			dir+="$1"
@@ -113,11 +124,15 @@ recover(){
 if [[ $# -eq 0 ]];
 then
 	usage
+	recover
 else
 	readArguments $@
 	if $dry_run;
 	then
 		dryrun
+	elif $add;
+	then
+		save_dirs
 	elif $recover_backup;
 	then
 		recover

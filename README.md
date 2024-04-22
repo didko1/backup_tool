@@ -2,7 +2,9 @@
 backup_tool to backup files and directories
 usage:
 ./backup.sh dir1 dir2 ...
+./backup - backup directories from .dir_backup list
 options
+ --add add new directories to .dir_backup list
  -a option to append file or dir to existing archive
 
 ./backup.sh -a [archive] [dir/file]
