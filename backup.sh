@@ -9,6 +9,7 @@ export append=false
 export add=false
 export remove=false
 export recover_backup=false
+export PWD=$(pwd)
 
 usage(){
     echo "No new directories provided. Backing up all dirs from .dir_backup"
@@ -52,6 +53,14 @@ readArguments(){
 			shift
 			;;
 
+		--remove)
+			shift
+			remove=true
+			dir+="$1"
+                        dir+=" "
+			shift
+			;;
+
 		--recover)
 			shift
 			recover_backup=true
@@ -82,6 +91,21 @@ save_dirs(){
             echo "$val" >> $backup_file
     done
 
+}
+
+remove_dirs(){
+    tmp_file=$PWD/.tmp
+    touch $tmp_file
+    for path in $dir;
+    do
+	cat $backup_file | while read L; do 
+	    if ! echo $L | grep -w "$path";
+	    then
+		echo "$L" >> $tmp_file;
+	    fi
+        done
+	mv $tmp_file $backup_file
+    done
 }
 
 archive_dirs(){
@@ -133,6 +157,9 @@ else
 	elif $add;
 	then
 		save_dirs
+	elif $remove;
+	then
+		remove_dirs
 	elif $recover_backup;
 	then
 		recover
