@@ -1,177 +1,111 @@
 #!/bin/bash
 
-export filename
-export dir=""
-export dry_run=false
-export backup_file=.dir_backup
-export tar=""
-export append=false
-export add=false
-export remove=false
-export recover_backup=false
-export PWD=$(pwd)
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+BACKUP_LIST="$SCRIPT_DIR/.backup_files_and_dirs"
+BACKUP_DIR="$SCRIPT_DIR/backups"
 
-usage(){
-    echo "No new directories provided. Backing up all dirs from .dir_backup"
+mkdir -p "$BACKUP_DIR"
+
+show_help() {
+	cat << EOF
+Usage: $0 [OPTIONS]
+
+Options:
+  -h, --help                 Show this help menu
+  -b, --backup               Create a backup archive of files/folders listed in $BACKUP_LIST
+  -a, --add FILES_OR_DIRS    Add one or more files or directories to $BACKUP_LIST
+  -r, --remove FILES_OR_DIRS Remove one or more files or directories from $BACKUP_LIST
+  -l, --list                 List files and directories currently in $BACKUP_LIST
+
+Backup archive will be created in '$BACKUP_DIR' with name format: backup_YYYY-MM-DD_HH-MM-SS.tar.gz
+EOF
 }
 
-show_help_message(){
-    usage
-    bold=$(tput bold)
-    normal=$(tput sgr0)
-    echo  "${bold}Options:${normal}"
-    echo "${bold}-a ${normal}append file/dir to archive"
-    echo "${bold}--recovery${normal} recover previous archive"
-    echo "${bold}--dry-run${normal} list files that will be archived"
-    echo "${bold}-h${normal} show this message"
+create_backup() {
+	if [[ ! -f "$BACKUP_LIST" ]] || [[ ! -s "$BACKUP_LIST" ]]; then
+		echo "No files or directories listed in $BACKUP_LIST"
+		exit 1
+	fi
+	TIMESTAMP=$(date +"%Y-%m-%d_%H-%M-%S")
+	BACKUP_FILE="$BACKUP_DIR/backup_$TIMESTAMP.tar.gz"
+	tar -czf "$BACKUP_FILE" -T "$BACKUP_LIST" 2>/dev/null
+	if [[ $? -eq 0 ]]; then
+		echo "Backup created successfully $BACKUP_FILE"
+	else
+		echo "ERROR: Some files cannot be backed up"
+	fi
 }
 
-readArguments(){
-    while [[ $# -gt 0 ]];
-    do
+add_entries() {
+	if [[ $# -eq 0 ]]; then
+                echo "No files or directories specified to add"
+                exit 1
+        fi
+	for FILE in "$@"; do
+		if grep Fxq "$FILE" "$BACKUP_LIST" 2>/dev/null; then
+			echo "$FILE already in backup list"
+		else
+			echo "$FILE" >> "$BACKUP_LIST"
+			echo "$FILE added to backup list"
+		fi
+	done
+}
+
+remove_entries() {
+	if [[ $# -eq 0 ]]; then
+                echo "No files or directories specified to remove"
+                exit 1
+        fi
+	for FILE in "$@"; do
+		if grep -Fxq "$FILE" "$BACKUP_LIST"; then
+			grep -Fxv "$FILE" "$BACKUP_LIST" > "$BACKUP_LIST.temp" && mv "$BACKUP_LIST.temp" "$BACKUP_LIST"
+			echo "$FILE removed from backup list"
+		else
+			echo "$FILE is not in backup list"
+		fi
+	done
+}
+
+list_entries() {
+	if [[ ! -f "$BACKUP_LIST" ]] || [[ ! -s "$BACKUP_LIST" ]]; then
+		echo "Backup list is empty."
+	else
+		echo "Files and directories in backup list:"
+		cat "$BACKUP_LIST"
+    	fi
+
+}
+
+while [[ $# -gt 0 ]];do
 	case $1 in
-		-n|--dry-run)
-			dry_run=true
-			shift
+		-h|--help)
+			show_help
+			exit 0;
 			;;
-		--add)
-			shift
-			add=true
-			dir+="$1"
-                        dir+=" "
-                        shift
-                        ;;
-
-		-a)
-			shift
-			append=true
-			echo "append is $append"
-			tar="$1"
-			shift
-			dir+="$1"
-			dir+=" "
-			shift
+		-b|--backup)
+			create_backup
+			exit 0;
 			;;
-
-		--remove)
+		-a|--add)
 			shift
-			remove=true
-			dir+="$1"
-                        dir+=" "
-			shift
+			add_entries "$@"
+			exit 0;
 			;;
-
-		--recover)
+		-r|--remove)
 			shift
-			recover_backup=true
+			remove_entries "$@"
+			exit 0;
 			;;
-		-h)
-			show_help_message
-			shift
+		-l|--list)
+			list_entries
+			exit 0;
 			;;
-
 		*)
-		        dir+="$1"
-			dir+=" "
-			shift
+			echo "Unknown option: $1"
+			show_help
+			exit 1;
 			;;
 	esac
-    done
-}
-
-clean_backup_file(){
-    echo "directories backed up" > $backup_file
-}
-
-save_dirs(){
-    delim=" "
-    read -ra newarr <<< "$dir"
-    for val in "${newarr[@]}";
-    do
-            echo "$val" >> $backup_file
-    done
-
-}
-
-remove_dirs(){
-    tmp_file=$PWD/.tmp
-    touch $tmp_file
-    for path in $dir;
-    do
-	cat $backup_file | while read L; do 
-	    if ! echo $L | grep -w "$path";
-	    then
-		echo "$L" >> $tmp_file;
-	    fi
-        done
-	mv $tmp_file $backup_file
-    done
-}
-
-archive_dirs(){
-    if $append;
-    then
-	    tar_name=$tar
-	    echo "tar is $tar_name"
-    else
-	    tar_name="archive_$(date +%Y%m%d%H%M).tar.xz"
-    fi
-    for path in $dir;
-    do
-	    ls $path | while read L; do tar -rvf $tar_name $dir/$L ;done
-    done
-}
-
-dryrun(){
-    echo "Following files will be included to archive:"
-    for path in $dir;
-    do
-	    ls $path
-    done
-}
-
-recover(){
-    echo "recovering backups"
-    if ! [[ -e $backup_file ]];
-    then
-	echo "!!! nothing to recover !!!"
-	exit 1
-    fi
-    cat $backup_file | while read D;
-    do
-	echo "archiving directory $D"
-        tar -rvf backup_recovered.tar.xz $D
-    done
-}
-
-############# main ###########
-if [[ $# -eq 0 ]];
-then
-	usage
-	recover
-else
-	readArguments $@
-	if $dry_run;
-	then
-		dryrun
-	elif $add;
-	then
-		save_dirs
-	elif $remove;
-	then
-		remove_dirs
-	elif $recover_backup;
-	then
-		recover
-	else
-		if ! $append;
-		then
-			clean_backup_file
-		fi
-		save_dirs
-		archive_dirs
-	fi
-fi
-
-
-
+done
+#if no arguments provided
+show_help
